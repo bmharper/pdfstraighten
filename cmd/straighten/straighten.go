@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/bmharper/pdfstraighten"
@@ -41,6 +40,7 @@ func main() {
 
 	// Read page angles, and then decide if we need to straighten
 	angles, err := doc.PageAngles(maxAngle, true)
+	check(err)
 	nRotated := 0
 	for i, a := range angles {
 		if a != 0 {
@@ -68,9 +68,7 @@ func main() {
 		check(err)
 		for i, img := range images {
 			outputFileName := fmt.Sprintf("straightened_page_%d.jpg", i+1)
-			raw, err := io.ReadAll(img)
-			check(err)
-			err = os.WriteFile(outputFileName, raw, 0644)
+			err = os.WriteFile(outputFileName, img, 0644)
 			check(err)
 		}
 	}

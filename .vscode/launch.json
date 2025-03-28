@@ -9,9 +9,9 @@
 			"type": "go",
 			"request": "launch",
 			"mode": "auto",
-			"program": "${workspaceFolder}/cmd/straighten.go",
+			"program": "${workspaceFolder}/cmd/straighten/straighten.go",
 			"args": [
-				"/home/ben/tmp/pdf/RedGlobal-Extract-Rotated.pdf"
+				"/mnt/c/Users/BenHarper/OneDrive - Wefi Technology Group, LLC/Spreading/Runon Tables/BS and IS GHA March 2024.pdf"
 			]
 		}
 	]

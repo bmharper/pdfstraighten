@@ -65,6 +65,7 @@ func (d *Document) IsScanned() (bool, error) {
 	// go-fitz for this. Checking that there is 1 image per page is not sufficient,
 	// because what if a document has exactly one logo image per page, and the logo
 	// happens to be quite high resolution, mimicking a scanned page.
+	// However, it is a necessary condition that there be precisely one image per page.
 	for i := range d.fz.NumPage() {
 		txt, err := d.fz.Text(i)
 		if err != nil {
@@ -72,6 +73,20 @@ func (d *Document) IsScanned() (bool, error) {
 		}
 		if txt != "" {
 			return false, nil
+		}
+		// This is crazy inefficient, decoding every image. We need a better PDF library!
+		imagesInPages, err := pdfapi.ExtractImagesRaw(d.reader, []string{fmt.Sprintf("%d", i+1)}, nil)
+		if err != nil {
+			return false, err
+		}
+		if len(imagesInPages[0]) != 1 {
+			return false, nil
+		}
+		for _, img := range imagesInPages[0] {
+			if img.Reader == nil {
+				// Rare failure mode of pdfcpu
+				return false, fmt.Errorf("Unable to read image on page %v", i+1)
+			}
 		}
 	}
 	return true, nil
@@ -97,7 +112,7 @@ func (d *Document) PageAngles(maxAngle float64, include90Degrees bool) ([]float6
 // Returns a new version of the PDF, with rotated pages straightened.
 // We only scan between -maxAngle and +maxAngle degrees.
 func (d *Document) StraightenOnePass(orient *textorient.Orient, maxAngle float64) ([]byte, error) {
-	straightImages := []io.Reader{}
+	straightImages := [][]byte{}
 
 	for page := 0; page < d.NumPages; page++ {
 		raw, img, err := d.getImageOnPage(page)
@@ -109,15 +124,15 @@ func (d *Document) StraightenOnePass(orient *textorient.Orient, maxAngle float64
 		if err != nil {
 			return nil, err
 		}
-		straightImages = append(straightImages, bytes.NewReader(fixed))
+		straightImages = append(straightImages, fixed)
 	}
 
 	return d.buildNewPDF(straightImages)
 }
 
 // Given the list of page angles obtained by PageAngles(), straighten each image and return the list of compressed images
-func (d *Document) StraightenedImages(orient *textorient.Orient, pageAngles []float64) ([]io.Reader, error) {
-	straightImages := []io.Reader{}
+func (d *Document) StraightenedImages(orient *textorient.Orient, pageAngles []float64) ([][]byte, error) {
+	straightImages := [][]byte{}
 
 	for page := 0; page < d.NumPages; page++ {
 		raw, img, err := d.getImageOnPage(page)
@@ -129,7 +144,7 @@ func (d *Document) StraightenedImages(orient *textorient.Orient, pageAngles []fl
 		if err != nil {
 			return nil, err
 		}
-		straightImages = append(straightImages, bytes.NewReader(fixed))
+		straightImages = append(straightImages, fixed)
 	}
 
 	return straightImages, nil
@@ -145,13 +160,17 @@ func (d *Document) Straighten(orient *textorient.Orient, pageAngles []float64) (
 }
 
 // Create a new PDF from the given images
-func (d *Document) buildNewPDF(images []io.Reader) ([]byte, error) {
+func (d *Document) buildNewPDF(images [][]byte) ([]byte, error) {
+	imageReaders := []io.Reader{}
+	for _, img := range images {
+		imageReaders = append(imageReaders, bytes.NewReader(img))
+	}
 	output := &bytes.Buffer{}
 	importConfig := pdfcpu.DefaultImportConfig()
 	importConfig.Scale = 1
 	importConfig.Pos = types.Center
 	//importConfig.Pos = types.Full
-	if err := pdfapi.ImportImages(nil, output, images, importConfig, nil); err != nil {
+	if err := pdfapi.ImportImages(nil, output, imageReaders, importConfig, nil); err != nil {
 		return nil, err
 	}
 	return output.Bytes(), nil
@@ -226,6 +245,10 @@ func (d *Document) getImageOnPage(pageIdx int) ([]byte, *cimg.Image, error) {
 	}
 	imageMap := images[0]
 	for _, img := range imageMap {
+		// This is a hidden failure mode of pdfcpu - doesn't happen often
+		if img.Reader == nil {
+			return nil, nil, fmt.Errorf("No image found on page %v", pageIdx+1)
+		}
 		raw, err := io.ReadAll(img)
 		if err != nil {
 			return nil, nil, err
