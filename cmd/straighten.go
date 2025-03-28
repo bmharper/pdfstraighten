@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/bmharper/pdfstraighten"
+	"github.com/bmharper/textorient"
 )
 
 func check(err error) {
@@ -19,7 +21,12 @@ func main() {
 		return
 	}
 	filename := os.Args[1]
-	maxAngle := 2.5
+
+	orient, err := textorient.NewOrient()
+	check(err)
+	maxAngle := 2.6
+	allow90Degrees := true
+	outputPDF := false // else images
 	doc, err := pdfstraighten.NewDocumentFromFile(filename)
 	check(err)
 	defer doc.Close()
@@ -38,7 +45,7 @@ func main() {
 	for i, a := range angles {
 		if a != 0 {
 			nRotated++
-			if a > 80 && a < 100 {
+			if !allow90Degrees && (a > 80 && a < 100) {
 				// Instead of rotating 90 degrees, and thereby requiring landscape pages,
 				// just rotate to straighten the page.
 				angles[i] = a - 90
@@ -50,7 +57,21 @@ func main() {
 		return
 	}
 	fmt.Printf("Straightening\n")
-	straight, err := doc.Straighten(angles)
-	check(err)
-	os.WriteFile("straightened.pdf", straight, 0644)
+	if outputPDF {
+		// PDF
+		straight, err := doc.Straighten(orient, angles)
+		check(err)
+		os.WriteFile("straightened.pdf", straight, 0644)
+	} else {
+		// Images
+		images, err := doc.StraightenedImages(orient, angles)
+		check(err)
+		for i, img := range images {
+			outputFileName := fmt.Sprintf("straightened_page_%d.jpg", i+1)
+			raw, err := io.ReadAll(img)
+			check(err)
+			err = os.WriteFile(outputFileName, raw, 0644)
+			check(err)
+		}
+	}
 }

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+DIRECTORY=$1
+
+if [ -z "$DIRECTORY" ]; then
+    echo "Usage: $0 <directory>"
+    exit 1
+fi
+
+for file in "$DIRECTORY"/*.pdf; do
+    if [ ! -e "$file" ]; then
+        echo "No PDF files found in $DIRECTORY"
+        exit 1
+    fi
+    
+    echo "Straightening: $file"
+    ./straighten "$file"
+    
+    if [ $? -ne 0 ]; then
+        echo "Error straightening $file"
+    fi
+
+    read -p "Press Enter to continue to next file..."
+    echo ""
+done
+
+echo "Done"

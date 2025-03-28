@@ -9,6 +9,7 @@ import (
 
 	"github.com/bmharper/cimg/v2"
 	"github.com/bmharper/docangle"
+	"github.com/bmharper/textorient"
 	"github.com/gen2brain/go-fitz"
 	pdfapi "github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
@@ -95,7 +96,7 @@ func (d *Document) PageAngles(maxAngle float64, include90Degrees bool) ([]float6
 // Compute angles and produce straightened PDF in a single pass.
 // Returns a new version of the PDF, with rotated pages straightened.
 // We only scan between -maxAngle and +maxAngle degrees.
-func (d *Document) StraightenOnePass(maxAngle float64) ([]byte, error) {
+func (d *Document) StraightenOnePass(orient *textorient.Orient, maxAngle float64) ([]byte, error) {
 	straightImages := []io.Reader{}
 
 	for page := 0; page < d.NumPages; page++ {
@@ -104,7 +105,7 @@ func (d *Document) StraightenOnePass(maxAngle float64) ([]byte, error) {
 			return nil, err
 		}
 		angle := d.getImageAngle(img, maxAngle, false)
-		fixed, err := d.straightenImage(raw, img, angle)
+		fixed, err := d.straightenImage(orient, raw, img, angle)
 		if err != nil {
 			return nil, err
 		}
@@ -114,8 +115,8 @@ func (d *Document) StraightenOnePass(maxAngle float64) ([]byte, error) {
 	return d.buildNewPDF(straightImages)
 }
 
-// Given the list of page angles obtained by PageAngles(), produce a straightened version of the document
-func (d *Document) Straighten(pageAngles []float64) ([]byte, error) {
+// Given the list of page angles obtained by PageAngles(), straighten each image and return the list of compressed images
+func (d *Document) StraightenedImages(orient *textorient.Orient, pageAngles []float64) ([]io.Reader, error) {
 	straightImages := []io.Reader{}
 
 	for page := 0; page < d.NumPages; page++ {
@@ -124,13 +125,22 @@ func (d *Document) Straighten(pageAngles []float64) ([]byte, error) {
 			return nil, err
 		}
 		angle := pageAngles[page]
-		fixed, err := d.straightenImage(raw, img, angle)
+		fixed, err := d.straightenImage(orient, raw, img, angle)
 		if err != nil {
 			return nil, err
 		}
 		straightImages = append(straightImages, bytes.NewReader(fixed))
 	}
 
+	return straightImages, nil
+}
+
+// Given the list of page angles obtained by PageAngles(), produce a straightened version of the document
+func (d *Document) Straighten(orient *textorient.Orient, pageAngles []float64) ([]byte, error) {
+	straightImages, err := d.StraightenedImages(orient, pageAngles)
+	if err != nil {
+		return nil, err
+	}
 	return d.buildNewPDF(straightImages)
 }
 
@@ -148,26 +158,50 @@ func (d *Document) buildNewPDF(images []io.Reader) ([]byte, error) {
 }
 
 // Return either the raw image (if angle == 0), or the straightened image
-func (d *Document) straightenImage(raw []byte, img *cimg.Image, angle float64) ([]byte, error) {
+func (d *Document) straightenImage(orient *textorient.Orient, raw []byte, img *cimg.Image, angle float64) ([]byte, error) {
+	fixed := img
 	if angle != 0 {
-		fixed, err := d.rotateImageAndCompress(img, -angle)
-		if err != nil {
-			return nil, err
-		}
-		return fixed, nil
-	} else {
-		return raw, nil
+		fixed = d.rotateImage(img, -angle)
 	}
-}
-
-func (d *Document) rotateImageAndCompress(img *cimg.Image, angle float64) ([]byte, error) {
-	fixed := cimg.NewImage(img.Width, img.Height, img.Format)
-	cimg.Rotate(img, fixed, angle*math.Pi/180, nil)
-	compressed, err := cimg.Compress(fixed, cimg.MakeCompressParams(cimg.Sampling444, 95, 0))
+	upright, err := orient.MakeUpright(fixed)
 	if err != nil {
 		return nil, err
 	}
-	return compressed, nil
+	if upright == img {
+		// There was no transformation at all, so just return the original blob
+		return raw, nil
+	}
+	return cimg.Compress(upright, cimg.MakeCompressParams(cimg.Sampling444, 95, 0))
+}
+
+func (d *Document) rotateImage(img *cimg.Image, angle float64) *cimg.Image {
+	const cropLimitDegrees = 5
+	var newWidth int
+	var newHeight int
+	if math.Abs(angle) <= cropLimitDegrees {
+		// If the angle is small, then just clip, because there's usually padding implicitly added by the rotated scan
+		newWidth = img.Width
+		newHeight = img.Height
+	} else if math.Abs(angle-90) <= cropLimitDegrees || math.Abs(angle+90) <= cropLimitDegrees {
+		// Same as above, but for landscape scans
+		newWidth = img.Height
+		newHeight = img.Width
+	} else {
+		// Figure out the necessary size of the rotated image
+		cosA := math.Abs(math.Cos(angle * math.Pi / 180))
+		sinA := math.Abs(math.Sin(angle * math.Pi / 180))
+		newWidth = int(float64(img.Width)*cosA + float64(img.Height)*sinA)
+		newHeight = int(float64(img.Width)*sinA + float64(img.Height)*cosA)
+	}
+
+	fixed := cimg.NewImage(newWidth, newHeight, img.Format)
+	cimg.Rotate(img, fixed, angle*math.Pi/180, nil)
+	return fixed
+	//compressed, err := cimg.Compress(fixed, cimg.MakeCompressParams(cimg.Sampling444, 95, 0))
+	//if err != nil {
+	//	return nil, err
+	//}
+	//return compressed, nil
 	//fixed.WriteJPEG(fmt.Sprintf("fixed-%d.jpg", page), cimg.MakeCompressParams(cimg.Sampling444, 95, 0), 0644)
 }
 
