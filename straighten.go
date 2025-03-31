@@ -54,8 +54,15 @@ func NewDocumentFromMemory(doc []byte) (*Document, error) {
 }
 
 func (d *Document) Close() {
-	if closer, ok := d.reader.(io.Closer); ok {
-		closer.Close()
+	if d.reader != nil {
+		if closer, ok := d.reader.(io.Closer); ok {
+			closer.Close()
+			d.reader = nil
+		}
+	}
+	if d.fz != nil {
+		d.fz.Close()
+		d.fz = nil
 	}
 }
 
