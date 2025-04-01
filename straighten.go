@@ -175,8 +175,10 @@ func (d *Document) buildNewPDF(images [][]byte) ([]byte, error) {
 	output := &bytes.Buffer{}
 	importConfig := pdfcpu.DefaultImportConfig()
 	importConfig.Scale = 1
-	importConfig.Pos = types.Center
-	//importConfig.Pos = types.Full
+	// types.Full is better than types.Center, because we get landscape/portrait pages, depending on the aspect ratio of the page.
+	// Basically, with types.Full, the page size matches the image size.
+	//importConfig.Pos = types.Center
+	importConfig.Pos = types.Full
 	if err := pdfapi.ImportImages(nil, output, imageReaders, importConfig, nil); err != nil {
 		return nil, err
 	}

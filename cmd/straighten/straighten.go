@@ -25,7 +25,7 @@ func main() {
 	check(err)
 	maxAngle := 2.6
 	allow90Degrees := true
-	outputPDF := false // else images
+	outputPDF := true // else images
 	doc, err := pdfstraighten.NewDocumentFromFile(filename)
 	check(err)
 	defer doc.Close()
