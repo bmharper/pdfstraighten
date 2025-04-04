@@ -73,6 +73,31 @@ func (d *Document) IsScanned() (bool, error) {
 	// because what if a document has exactly one logo image per page, and the logo
 	// happens to be quite high resolution, mimicking a scanned page.
 	// However, it is a necessary condition that there be precisely one image per page.
+
+	// Extract all images and their resolutions
+	allPages := []string{}
+	for i := range d.fz.NumPage() {
+		allPages = append(allPages, fmt.Sprintf("%d", i+1))
+	}
+	allImages, err := pdfapi.Images(d.reader, allPages, nil)
+	if err != nil {
+		return false, err
+	}
+	for i := range allImages {
+		imagesOnPage := allImages[i]
+		if len(imagesOnPage) != 1 {
+			return false, nil
+		}
+		for _, img := range imagesOnPage {
+			// go-fitz sometimes fails to extract text, so we need this criteria as a fallback for documents
+			// with one little logo image on every page, and some text.
+			pixels := img.Width * img.Height
+			if pixels < 800*600 {
+				return false, nil
+			}
+		}
+	}
+
 	for i := range d.fz.NumPage() {
 		txt, err := d.fz.Text(i)
 		if err != nil {
@@ -80,20 +105,6 @@ func (d *Document) IsScanned() (bool, error) {
 		}
 		if txt != "" {
 			return false, nil
-		}
-		// This is crazy inefficient, decoding every image. We need a better PDF library!
-		imagesInPages, err := pdfapi.ExtractImagesRaw(d.reader, []string{fmt.Sprintf("%d", i+1)}, nil)
-		if err != nil {
-			return false, err
-		}
-		if len(imagesInPages[0]) != 1 {
-			return false, nil
-		}
-		for _, img := range imagesInPages[0] {
-			if img.Reader == nil {
-				// Rare failure mode of pdfcpu
-				return false, fmt.Errorf("Unable to read image on page %v", i+1)
-			}
 		}
 	}
 	return true, nil

@@ -2,12 +2,12 @@ module github.com/bmharper/pdfstraighten
 
 go 1.24.1
 
-replace github.com/bmharper/textorient => ../textorient
+//replace github.com/bmharper/textorient => ../textorient
 
 require (
 	github.com/bmharper/cimg/v2 v2.1.3
 	github.com/bmharper/docangle v1.0.2
-	github.com/bmharper/textorient v1.0.4
+	github.com/bmharper/textorient v1.0.5
 	github.com/gen2brain/go-fitz v1.24.14
 	github.com/pdfcpu/pdfcpu v0.9.1
 )
@@ -22,7 +22,7 @@ require (
 	github.com/ebitengine/purego v0.8.1 // indirect
 	github.com/go-errors/errors v1.5.1 // indirect
 	github.com/go-xmlfmt/xmlfmt v1.1.3 // indirect
-	github.com/golang/geo v0.0.0-20250328065203-0b6e08c212fb // indirect
+	github.com/golang/geo v0.0.0-20250403143024-b4895f722f25 // indirect
 	github.com/hhrutter/lzw v1.0.0 // indirect
 	github.com/hhrutter/tiff v1.0.1 // indirect
 	github.com/jupiterrider/ffi v0.2.2 // indirect

@@ -10,6 +10,8 @@ github.com/bmharper/textorient v1.0.2 h1:qepF10Xj7av0Ah54KYAaHch4rjGp6F4oz5Qd/4S
 github.com/bmharper/textorient v1.0.2/go.mod h1:uy4YRM3Y2JlybMSu+xXc7BCTFo9LaVTJLIoP0U3bU+g=
 github.com/bmharper/textorient v1.0.3 h1:1kEFMY2gePQR+4II5zmkYWuvT1rBZum1276VvamlQZs=
 github.com/bmharper/textorient v1.0.3/go.mod h1:uy4YRM3Y2JlybMSu+xXc7BCTFo9LaVTJLIoP0U3bU+g=
+github.com/bmharper/textorient v1.0.5 h1:We7ojsXEXamok9MKaXpYFcuKEGKxBVzqBgO4weS0/CA=
+github.com/bmharper/textorient v1.0.5/go.mod h1:uy4YRM3Y2JlybMSu+xXc7BCTFo9LaVTJLIoP0U3bU+g=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dsoprea/go-exif/v2 v2.0.0-20200321225314-640175a69fe4/go.mod h1:Lm2lMM2zx8p4a34ZemkaUV95AnMl4ZvLbCUbwOvLC2E=
@@ -58,6 +60,8 @@ github.com/golang/geo v0.0.0-20250324010448-bc23e40121c4 h1:OrFwCvn/b4/QGIM7f7kR
 github.com/golang/geo v0.0.0-20250324010448-bc23e40121c4/go.mod h1:J+F9/3Ofc8ysEOY2/cNjxTMl2eB1gvPIywEHUplPgDA=
 github.com/golang/geo v0.0.0-20250328065203-0b6e08c212fb h1:eqdj1jSZjgmPdSl2lr3rAwJykSe9jHxPN1zLuasKVh0=
 github.com/golang/geo v0.0.0-20250328065203-0b6e08c212fb/go.mod h1:J+F9/3Ofc8ysEOY2/cNjxTMl2eB1gvPIywEHUplPgDA=
+github.com/golang/geo v0.0.0-20250403143024-b4895f722f25 h1:Xh/kky7r78vEKmbqIP4ickCNs0ukkuEQBvu3tU/RHKY=
+github.com/golang/geo v0.0.0-20250403143024-b4895f722f25/go.mod h1:J+F9/3Ofc8ysEOY2/cNjxTMl2eB1gvPIywEHUplPgDA=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
 github.com/hhrutter/lzw v1.0.0 h1:laL89Llp86W3rRs83LvKbwYRx6INE8gDn0XNb1oXtm0=
